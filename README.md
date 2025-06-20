@@ -26,7 +26,7 @@
     <br>专精: 动态规划、数论算法
   </td>
   <td align="center">
-    <img src="./images/characters/yuzu.png" width="250" alt="ユズ (Yuzu)" />
+    <img src="./images/characters/yuzu.png" width="300" alt="ユズ (Yuzu)" />
     <br><strong>🎮 ユズ (Yuzu)</strong>
     <br>游戏开发部部长 | 游戏制作专家
     <br>专精: 游戏开发、创意设计
