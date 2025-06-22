@@ -2,9 +2,9 @@
 
 ## 📋 题目信息
 - **题目编号**: P2754
-- **题目来源**: 洛谷 (Luogu)
-- **题目链接**: [https://www.luogu.com.cn/record/220577983](https://www.luogu.com.cn/record/220577983)
-- **难度等级**: ★★★★☆
+- **题目来源**: 洛谷 CTSC1999
+- **题目链接**: [https://www.luogu.com.cn/problem/P2754](https://www.luogu.com.cn/problem/P2754)
+- **难度**: 省选/NOI−
 - **算法标签**: 网络流、Dinic算法、并查集、图论
 
 ## 📁 文件说明

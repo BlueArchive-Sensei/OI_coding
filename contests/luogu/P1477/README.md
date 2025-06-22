@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![difficulty](https://img.shields.io/badge/难度-省选/NOI--orange)
+![difficulty](https://img.shields.io/badge/难度-省选/NOI−-orange)
 ![tag](https://img.shields.io/badge/标签-图论-blue)
 ![tag](https://img.shields.io/badge/标签-连通分量-blue)
 ![tag](https://img.shields.io/badge/标签-环检测-blue)
