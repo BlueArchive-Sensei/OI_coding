@@ -1,473 +1,415 @@
-# 🌸 Treap详解
-## *千禧年科技学院 - ユウカ数据结构专题*
+# 🎯 Treap - 随机优先级的神奇平衡树
+## *千禧年科技学院 - アリス老师的算法课*
 
-*"Treap完美结合了二叉搜索树和堆的优点，随机性保证了优秀的期望性能！"*
-
----
-
-## 📚 目录
-
-1. [Treap基本概念](#treap基本概念)
-2. [核心操作详解](#核心操作详解)
-3. [FHQ-Treap详解](#fhq-treap详解)
-4. [算法实现](#算法实现)
-5. [复杂度分析](#复杂度分析)
-6. [经典应用](#经典应用)
-7. [优化技巧](#优化技巧)
+*"想象一下，你既想要书架按编号排序，又想要重要的书在顶层，Treap就是这样的神奇书架！"*
 
 ---
 
-## 🎯 Treap基本概念
+## 🎪 开始之前 - 什么是Treap？
 
-### 定义
+### 🌟 最简单的理解
 
-**Treap（Tree + Heap）**是一种随机化的二叉搜索树，由Cecilia Aragon和Raimund Seidel在1989年提出。它同时满足：
+**Treap = Tree + Heap**
 
-1. **BST性质**：对于key值，满足二叉搜索树的性质
-2. **Heap性质**：对于priority值，满足堆的性质
-
-### 🌟 核心思想
-
-#### 随机化平衡
-```
-通过随机优先级保证树的平衡性
-期望深度为O(log n)
-```
-
-#### 双重性质
-- **按key维护BST性质**：支持查找、插入、删除
-- **按priority维护Heap性质**：保证树的平衡
-
-### 🔍 结构示例
+想象你有一个**双重标准的书架**：
+- 📚 **按编号排序**（像二叉搜索树）
+- 🎲 **按重要程度排序**（像堆）
+- ⚡ **每本书都有编号和重要程度**
 
 ```
-节点结构: (key, priority)
+每本书：(编号, 重要程度)
+例如：(25, 90), (15, 60), (35, 80)
+```
 
-         (5, 9)
-        /       \
-    (3, 7)      (8, 6)
-    /    \      /    \
-(1, 4) (4, 5) (6, 3) (9, 2)
+### 🎯 核心思想
 
-BST性质: 左 < 根 < 右 (按key)
-Heap性质: 父 > 子 (按priority)
+```
+编号满足二叉搜索树性质 + 重要程度满足堆性质 = 自然平衡
 ```
 
 ---
 
-## 🚀 核心操作详解
+## 📖 第一章：从生活例子开始
 
-### 🎭 基本旋转操作
+### 🏆 图书馆的智能书架
 
-#### 右旋 (rotateRight)
+假设你是图书馆管理员，有这些书：
+
+| 书名 | 编号 | 重要程度 |
+|------|------|----------|
+| 数学 | 10 | 85 |
+| 物理 | 20 | 92 |
+| 化学 | 30 | 78 |
+| 生物 | 40 | 88 |
+
+**要求：**
+1. 按编号排序（方便查找）
+2. 重要的书在上层（方便拿取）
+
+### 🎪 传统方法的问题
+
+**只按编号排序：**
 ```
-当左子节点的priority > 当前节点的priority时使用
+    20
+   /  \
+  10   30
+        \
+         40
+```
+问题：不考虑重要程度，重要的书可能在底层
 
-    y               x
-   / \             / \
-  x   C    ->     A   y
- / \                 / \
-A   B               B   C
+**只按重要程度排序：**
+```
+    92(物理)
+   /        \
+  88(生物)   85(数学)
+            /
+           78(化学)
+```
+问题：编号没有规律，查找困难
+
+### 🌟 Treap的解决方案
+
+**同时满足两个条件：**
+```
+         20(92)
+        /      \
+    10(85)    30(78)
+                 \
+                 40(88)
 ```
 
-#### 左旋 (rotateLeft)
+- **编号：** 10 < 20 < 30 < 40 ✓
+- **重要程度：** 92 > 85, 92 > 78, 78 < 88 ✓
+
+---
+
+## 🚀 第二章：Treap的两种实现
+
+### 🎯 方法一：传统Treap（旋转版）
+
+**核心思想：** 通过旋转维护堆性质
+
+#### 🌸 基本操作
+
+**插入过程：**
+1. 按编号找到位置插入
+2. 如果破坏堆性质，就旋转
+3. 持续旋转直到满足堆性质
+
+**删除过程：**
+1. 找到要删除的节点
+2. 通过旋转把它移到叶子
+3. 直接删除
+
+#### 📊 实战演示
+
+**插入 (15, 95)**
+
 ```
-当右子节点的priority > 当前节点的priority时使用
+步骤1：按编号插入
+    20(92)
+   /      \
+10(85)    30(78)
+   \         \
+   15(95)    40(88)
 
-  x                 y
- / \               / \
-A   y      ->     x   C
-   / \           / \
-  B   C         A   B
+步骤2：发现15的重要程度95 > 10的重要程度85，需要旋转
+    20(92)
+   /      \
+15(95)    30(78)
+/             \
+10(85)        40(88)
+
+步骤3：发现15的重要程度95 > 20的重要程度92，继续旋转
+    15(95)
+   /      \
+10(85)    20(92)
+             \
+             30(78)
+                \
+                40(88)
 ```
 
-### 🌸 插入操作
+### 🎯 方法二：FHQ-Treap（推荐）
 
-```cpp
-Node* insert(Node* root, int key, int priority) {
-    if (!root) return new Node(key, priority);
-    
-    if (key < root->key) {
-        root->left = insert(root->left, key, priority);
-        if (root->left->priority > root->priority) {
-            root = rotateRight(root);
-        }
-    } else {
-        root->right = insert(root->right, key, priority);
-        if (root->right->priority > root->priority) {
-            root = rotateLeft(root);
-        }
-    }
-    
-    return root;
-}
+**核心思想：** 通过分裂和合并操作
+
+#### 🌟 为什么推荐FHQ-Treap？
+
+1. **更简单** - 不需要复杂的旋转逻辑
+2. **更好写** - 代码更短，更容易理解
+3. **更强大** - 支持区间操作
+
+#### 🎪 核心操作
+
+**Split（分裂）：**
+把一棵树分成两棵树
+
+```
+原树：包含 ≤ key 和 > key 的所有节点
+分裂后：左树（≤ key）和右树（> key）
 ```
 
-### 🎯 删除操作
+**Merge（合并）：**
+把两棵树合并成一棵树
 
-```cpp
-Node* remove(Node* root, int key) {
-    if (!root) return nullptr;
-    
-    if (key < root->key) {
-        root->left = remove(root->left, key);
-    } else if (key > root->key) {
-        root->right = remove(root->right, key);
-    } else {
-        // 找到要删除的节点
-        if (!root->left && !root->right) {
-            delete root;
-            return nullptr;
-        } else if (!root->left) {
-            Node* temp = root->right;
-            delete root;
-            return temp;
-        } else if (!root->right) {
-            Node* temp = root->left;
-            delete root;
-            return temp;
-        } else {
-            // 两个子节点都存在，旋转priority大的上来
-            if (root->left->priority > root->right->priority) {
-                root = rotateRight(root);
-                root->right = remove(root->right, key);
-            } else {
-                root = rotateLeft(root);
-                root->left = remove(root->left, key);
-            }
-        }
-    }
-    
-    return root;
-}
+```
+条件：左树的所有值 ≤ 右树的所有值
+结果：合并后的树
 ```
 
 ---
 
-## 🎪 FHQ-Treap详解
+## 💻 第三章：FHQ-Treap完整实现
 
-### 概念介绍
-
-**FHQ-Treap（范浩强Treap）**是一种不需要旋转的Treap实现，通过**split**和**merge**操作实现所有功能。
-
-### 🌟 核心操作
-
-#### Split操作
-```cpp
-pair<Node*, Node*> split(Node* root, int key) {
-    if (!root) return {nullptr, nullptr};
-    
-    if (root->key <= key) {
-        auto [l, r] = split(root->right, key);
-        root->right = l;
-        return {root, r};
-    } else {
-        auto [l, r] = split(root->left, key);
-        root->left = r;
-        return {l, root};
-    }
-}
-```
-
-#### Merge操作
-```cpp
-Node* merge(Node* left, Node* right) {
-    if (!left || !right) return left ? left : right;
-    
-    if (left->priority > right->priority) {
-        left->right = merge(left->right, right);
-        return left;
-    } else {
-        right->left = merge(left, right->left);
-        return right;
-    }
-}
-```
-
-#### 基于Split/Merge的操作
-```cpp
-Node* insert(Node* root, int key) {
-    auto [l, r] = split(root, key);
-    Node* newNode = new Node(key, rand());
-    return merge(merge(l, newNode), r);
-}
-
-Node* remove(Node* root, int key) {
-    auto [l, temp] = split(root, key);
-    auto [mid, r] = split(temp, key);
-    return merge(l, r);
-}
-```
-
----
-
-## 💻 完整算法实现
-
-### 🌸 传统Treap实现
+### 🌸 基础版本
 
 ```cpp
-#include <bits/stdc++.h>
+#include <iostream>
+#include <random>
 using namespace std;
 
-struct TreapNode {
-    int key, priority, size;
-    TreapNode *left, *right;
+struct Node {
+    int key, priority;
+    Node* left;
+    Node* right;
     
-    TreapNode(int k) : key(k), priority(rand()), size(1), 
-                       left(nullptr), right(nullptr) {}
-};
-
-class Treap {
-private:
-    TreapNode* root;
-    
-    void updateSize(TreapNode* node) {
-        if (!node) return;
-        node->size = 1;
-        if (node->left) node->size += node->left->size;
-        if (node->right) node->size += node->right->size;
-    }
-    
-    TreapNode* rotateLeft(TreapNode* x) {
-        TreapNode* y = x->right;
-        x->right = y->left;
-        y->left = x;
-        updateSize(x);
-        updateSize(y);
-        return y;
-    }
-    
-    TreapNode* rotateRight(TreapNode* y) {
-        TreapNode* x = y->left;
-        y->left = x->right;
-        x->right = y;
-        updateSize(y);
-        updateSize(x);
-        return x;
-    }
-    
-    TreapNode* insertHelper(TreapNode* root, int key) {
-        if (!root) return new TreapNode(key);
-        
-        if (key < root->key) {
-            root->left = insertHelper(root->left, key);
-            if (root->left->priority > root->priority) {
-                root = rotateRight(root);
-            }
-        } else if (key > root->key) {
-            root->right = insertHelper(root->right, key);
-            if (root->right->priority > root->priority) {
-                root = rotateLeft(root);
-            }
-        }
-        
-        updateSize(root);
-        return root;
-    }
-    
-    TreapNode* removeHelper(TreapNode* root, int key) {
-        if (!root) return nullptr;
-        
-        if (key < root->key) {
-            root->left = removeHelper(root->left, key);
-        } else if (key > root->key) {
-            root->right = removeHelper(root->right, key);
-        } else {
-            if (!root->left && !root->right) {
-                delete root;
-                return nullptr;
-            } else if (!root->left) {
-                TreapNode* temp = root->right;
-                delete root;
-                return temp;
-            } else if (!root->right) {
-                TreapNode* temp = root->left;
-                delete root;
-                return temp;
-            } else {
-                if (root->left->priority > root->right->priority) {
-                    root = rotateRight(root);
-                    root->right = removeHelper(root->right, key);
-                } else {
-                    root = rotateLeft(root);
-                    root->left = removeHelper(root->left, key);
-                }
-            }
-        }
-        
-        updateSize(root);
-        return root;
-    }
-    
-    bool searchHelper(TreapNode* root, int key) {
-        if (!root) return false;
-        
-        if (key == root->key) return true;
-        else if (key < root->key) return searchHelper(root->left, key);
-        else return searchHelper(root->right, key);
-    }
-    
-    int kthHelper(TreapNode* root, int k) {
-        if (!root) return -1;
-        
-        int leftSize = root->left ? root->left->size : 0;
-        
-        if (k <= leftSize) {
-            return kthHelper(root->left, k);
-        } else if (k == leftSize + 1) {
-            return root->key;
-        } else {
-            return kthHelper(root->right, k - leftSize - 1);
-        }
-    }
-    
-    int getRankHelper(TreapNode* root, int key) {
-        if (!root) return 0;
-        
-        if (key <= root->key) {
-            return getRankHelper(root->left, key);
-        } else {
-            int leftSize = root->left ? root->left->size : 0;
-            return leftSize + 1 + getRankHelper(root->right, key);
-        }
-    }
-    
-public:
-    Treap() : root(nullptr) {
-        srand(time(nullptr));
-    }
-    
-    void insert(int key) {
-        root = insertHelper(root, key);
-    }
-    
-    void remove(int key) {
-        root = removeHelper(root, key);
-    }
-    
-    bool search(int key) {
-        return searchHelper(root, key);
-    }
-    
-    int kth(int k) {
-        return kthHelper(root, k);
-    }
-    
-    int getRank(int key) {
-        return getRankHelper(root, key) + 1;
-    }
-    
-    int getPredecessor(int key) {
-        TreapNode* current = root;
-        int result = -1;
-        
-        while (current) {
-            if (current->key < key) {
-                result = current->key;
-                current = current->right;
-            } else {
-                current = current->left;
-            }
-        }
-        
-        return result;
-    }
-    
-    int getSuccessor(int key) {
-        TreapNode* current = root;
-        int result = -1;
-        
-        while (current) {
-            if (current->key > key) {
-                result = current->key;
-                current = current->left;
-            } else {
-                current = current->right;
-            }
-        }
-        
-        return result;
-    }
-    
-    void inorderTraversal() {
-        inorderHelper(root);
-        cout << endl;
-    }
-    
-    void inorderHelper(TreapNode* root) {
-        if (!root) return;
-        inorderHelper(root->left);
-        cout << root->key << " ";
-        inorderHelper(root->right);
-    }
-    
-    int getSize() {
-        return root ? root->size : 0;
-    }
-};
-```
-
-### 🎯 FHQ-Treap实现
-
-```cpp
-#include <bits/stdc++.h>
-using namespace std;
-
-struct FHQNode {
-    int key, priority, size;
-    FHQNode *left, *right;
-    
-    FHQNode(int k) : key(k), priority(rand()), size(1), 
-                     left(nullptr), right(nullptr) {}
+    Node(int k) : key(k), priority(rand()), left(nullptr), right(nullptr) {}
 };
 
 class FHQTreap {
 private:
-    FHQNode* root;
+    Node* root;
     
-    void updateSize(FHQNode* node) {
+    // 分裂：把树分成 ≤key 和 >key 两部分
+    void split(Node* root, int key, Node*& left, Node*& right) {
+        if (!root) {
+            left = right = nullptr;
+            return;
+        }
+        
+        if (root->key <= key) {
+            left = root;
+            split(root->right, key, left->right, right);
+        } else {
+            right = root;
+            split(root->left, key, left, right->left);
+        }
+    }
+    
+    // 合并：把两棵树合并（要求left的所有值 ≤ right的所有值）
+    Node* merge(Node* left, Node* right) {
+        if (!left) return right;
+        if (!right) return left;
+        
+        if (left->priority > right->priority) {
+            left->right = merge(left->right, right);
+            return left;
+        } else {
+            right->left = merge(left, right->left);
+            return right;
+        }
+    }
+    
+public:
+    FHQTreap() : root(nullptr) {
+        srand(time(0));  // 初始化随机种子
+    }
+    
+    // 插入
+    void insert(int key) {
+        Node* left, *right;
+        split(root, key, left, right);
+        
+        // 检查是否已存在
+        Node* temp;
+        split(left, key - 1, left, temp);
+        
+        if (!temp) {
+            temp = new Node(key);
+        }
+        
+        root = merge(merge(left, temp), right);
+    }
+    
+    // 删除
+    void remove(int key) {
+        Node* left, *right, *temp;
+        split(root, key, left, right);
+        split(left, key - 1, left, temp);
+        
+        if (temp) {
+            delete temp;
+        }
+        
+        root = merge(left, right);
+    }
+    
+    // 查找
+    bool search(int key) {
+        return searchHelper(root, key);
+    }
+    
+    bool searchHelper(Node* node, int key) {
+        if (!node) return false;
+        if (node->key == key) return true;
+        if (key < node->key) return searchHelper(node->left, key);
+        return searchHelper(node->right, key);
+    }
+    
+    // 中序遍历
+    void inorder() {
+        inorderHelper(root);
+        cout << endl;
+    }
+    
+    void inorderHelper(Node* node) {
+        if (!node) return;
+        inorderHelper(node->left);
+        cout << "(" << node->key << "," << node->priority << ") ";
+        inorderHelper(node->right);
+    }
+    
+    // 显示树结构
+    void printTree() {
+        cout << "当前树结构：" << endl;
+        printHelper(root, "", true);
+        cout << endl;
+    }
+    
+    void printHelper(Node* node, string indent, bool isLast) {
+        if (!node) return;
+        
+        cout << indent;
+        if (isLast) {
+            cout << "└── ";
+            indent += "    ";
+        } else {
+            cout << "├── ";
+            indent += "│   ";
+        }
+        cout << "(" << node->key << "," << node->priority << ")" << endl;
+        
+        if (node->left || node->right) {
+            if (node->right) {
+                printHelper(node->right, indent, !node->left);
+            }
+            if (node->left) {
+                printHelper(node->left, indent, true);
+            }
+        }
+    }
+};
+```
+
+### 🎮 测试代码
+
+```cpp
+int main() {
+    FHQTreap treap;
+    
+    cout << "=== FHQ-Treap演示 ===" << endl;
+    
+    // 插入一些数据
+    cout << "插入: 10, 20, 30, 15, 25" << endl;
+    treap.insert(10);
+    treap.insert(20);
+    treap.insert(30);
+    treap.insert(15);
+    treap.insert(25);
+    
+    cout << "插入后的树：" << endl;
+    treap.printTree();
+    
+    cout << "中序遍历：";
+    treap.inorder();
+    
+    // 删除一个节点
+    cout << "删除 20" << endl;
+    treap.remove(20);
+    
+    cout << "删除后的树：" << endl;
+    treap.printTree();
+    
+    // 查找测试
+    cout << "查找 15: " << (treap.search(15) ? "找到" : "未找到") << endl;
+    cout << "查找 20: " << (treap.search(20) ? "找到" : "未找到") << endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 🎯 第四章：支持排名的完整版本
+
+### 🌟 加入size信息
+
+```cpp
+struct RankNode {
+    int key, priority, size;
+    RankNode* left;
+    RankNode* right;
+    
+    RankNode(int k) : key(k), priority(rand()), size(1), 
+                      left(nullptr), right(nullptr) {}
+};
+
+class RankTreap {
+private:
+    RankNode* root;
+    
+    // 更新size
+    void updateSize(RankNode* node) {
         if (!node) return;
         node->size = 1;
         if (node->left) node->size += node->left->size;
         if (node->right) node->size += node->right->size;
     }
     
-    pair<FHQNode*, FHQNode*> split(FHQNode* root, int key) {
-        if (!root) return {nullptr, nullptr};
+    // 按值分裂
+    void split(RankNode* root, int key, RankNode*& left, RankNode*& right) {
+        if (!root) {
+            left = right = nullptr;
+            return;
+        }
         
         if (root->key <= key) {
-            auto [l, r] = split(root->right, key);
-            root->right = l;
-            updateSize(root);
-            return {root, r};
+            left = root;
+            split(root->right, key, left->right, right);
         } else {
-            auto [l, r] = split(root->left, key);
-            root->left = r;
-            updateSize(root);
-            return {l, root};
+            right = root;
+            split(root->left, key, left, right->left);
         }
+        updateSize(left);
+        updateSize(right);
     }
     
-    pair<FHQNode*, FHQNode*> splitByRank(FHQNode* root, int k) {
-        if (!root) return {nullptr, nullptr};
+    // 按排名分裂
+    void splitByRank(RankNode* root, int rank, RankNode*& left, RankNode*& right) {
+        if (!root) {
+            left = right = nullptr;
+            return;
+        }
         
         int leftSize = root->left ? root->left->size : 0;
         
-        if (leftSize >= k) {
-            auto [l, r] = splitByRank(root->left, k);
-            root->left = r;
-            updateSize(root);
-            return {l, root};
+        if (leftSize < rank) {
+            left = root;
+            splitByRank(root->right, rank - leftSize - 1, left->right, right);
         } else {
-            auto [l, r] = splitByRank(root->right, k - leftSize - 1);
-            root->right = l;
-            updateSize(root);
-            return {root, r};
+            right = root;
+            splitByRank(root->left, rank, left, right->left);
         }
+        updateSize(left);
+        updateSize(right);
     }
     
-    FHQNode* merge(FHQNode* left, FHQNode* right) {
-        if (!left || !right) return left ? left : right;
+    // 合并
+    RankNode* merge(RankNode* left, RankNode* right) {
+        if (!left) return right;
+        if (!right) return left;
         
         if (left->priority > right->priority) {
             left->right = merge(left->right, right);
@@ -481,433 +423,346 @@ private:
     }
     
 public:
-    FHQTreap() : root(nullptr) {
-        srand(time(nullptr));
+    RankTreap() : root(nullptr) {
+        srand(time(0));
     }
     
+    // 插入
     void insert(int key) {
-        auto [l, r] = split(root, key);
-        FHQNode* newNode = new FHQNode(key);
-        root = merge(merge(l, newNode), r);
+        RankNode* left, *right;
+        split(root, key, left, right);
+        
+        RankNode* temp;
+        split(left, key - 1, left, temp);
+        
+        if (!temp) {
+            temp = new RankNode(key);
+        }
+        
+        root = merge(merge(left, temp), right);
     }
     
+    // 删除
     void remove(int key) {
-        auto [l, temp] = split(root, key - 1);
-        auto [mid, r] = split(temp, key);
-        root = merge(l, r);
+        RankNode* left, *right, *temp;
+        split(root, key, left, right);
+        split(left, key - 1, left, temp);
+        
+        if (temp) {
+            delete temp;
+        }
+        
+        root = merge(left, right);
     }
     
-    bool search(int key) {
-        auto [l, temp] = split(root, key - 1);
-        auto [mid, r] = split(temp, key);
-        bool found = (mid != nullptr);
-        root = merge(merge(l, mid), r);
-        return found;
-    }
-    
+    // 查询第k小（1-indexed）
     int kth(int k) {
-        auto [l, r] = splitByRank(root, k - 1);
-        auto [mid, r2] = splitByRank(r, 1);
-        int result = mid ? mid->key : -1;
-        root = merge(merge(l, mid), r2);
-        return result;
+        return kthHelper(root, k);
     }
     
+    int kthHelper(RankNode* node, int k) {
+        if (!node) return -1;
+        
+        int leftSize = node->left ? node->left->size : 0;
+        
+        if (k <= leftSize) {
+            return kthHelper(node->left, k);
+        } else if (k == leftSize + 1) {
+            return node->key;
+        } else {
+            return kthHelper(node->right, k - leftSize - 1);
+        }
+    }
+    
+    // 查询排名
     int getRank(int key) {
-        auto [l, r] = split(root, key - 1);
-        int rank = (l ? l->size : 0) + 1;
-        root = merge(l, r);
+        RankNode* left, *right;
+        split(root, key - 1, left, right);
+        
+        int rank = (left ? left->size : 0) + 1;
+        
+        root = merge(left, right);
         return rank;
     }
     
+    // 查询前驱（小于key的最大值）
     int getPredecessor(int key) {
-        auto [l, r] = split(root, key - 1);
-        int result = -1;
+        RankNode* left, *right;
+        split(root, key - 1, left, right);
         
-        if (l) {
-            FHQNode* current = l;
-            while (current->right) current = current->right;
-            result = current->key;
+        int result = -1;
+        if (left) {
+            result = kthHelper(left, left->size);
         }
         
-        root = merge(l, r);
+        root = merge(left, right);
         return result;
     }
     
+    // 查询后继（大于key的最小值）
     int getSuccessor(int key) {
-        auto [l, r] = split(root, key);
-        int result = -1;
+        RankNode* left, *right;
+        split(root, key, left, right);
         
-        if (r) {
-            FHQNode* current = r;
-            while (current->left) current = current->left;
-            result = current->key;
+        int result = -1;
+        if (right) {
+            result = kthHelper(right, 1);
         }
         
-        root = merge(l, r);
+        root = merge(left, right);
         return result;
     }
     
-    // 区间操作支持
-    void reverse(int l, int r) {
-        auto [left, temp] = splitByRank(root, l - 1);
-        auto [mid, right] = splitByRank(temp, r - l + 1);
-        
-        // 这里需要在节点中添加reverse标记
-        // mid->reversed ^= true;
-        
-        root = merge(merge(left, mid), right);
-    }
-    
-    void insertAt(int pos, int key) {
-        auto [l, r] = splitByRank(root, pos - 1);
-        FHQNode* newNode = new FHQNode(key);
-        root = merge(merge(l, newNode), r);
-    }
-    
-    void removeAt(int pos) {
-        auto [l, temp] = splitByRank(root, pos - 1);
-        auto [mid, r] = splitByRank(temp, 1);
-        root = merge(l, r);
-        delete mid;
-    }
-    
-    void inorderTraversal() {
-        inorderHelper(root);
+    // 显示树结构
+    void printTree() {
+        cout << "当前树结构：" << endl;
+        printHelper(root, "", true);
         cout << endl;
     }
     
-    void inorderHelper(FHQNode* root) {
-        if (!root) return;
-        inorderHelper(root->left);
-        cout << root->key << " ";
-        inorderHelper(root->right);
-    }
-    
-    int getSize() {
-        return root ? root->size : 0;
+    void printHelper(RankNode* node, string indent, bool isLast) {
+        if (!node) return;
+        
+        cout << indent;
+        if (isLast) {
+            cout << "└── ";
+            indent += "    ";
+        } else {
+            cout << "├── ";
+            indent += "│   ";
+        }
+        cout << "(" << node->key << "," << node->priority << ",size:" << node->size << ")" << endl;
+        
+        if (node->left || node->right) {
+            if (node->right) {
+                printHelper(node->right, indent, !node->left);
+            }
+            if (node->left) {
+                printHelper(node->left, indent, true);
+            }
+        }
     }
 };
 ```
 
-### 🎪 带懒惰标记的FHQ-Treap
+---
+
+## 🎪 第五章：区间操作的Treap
+
+### 🌟 支持区间翻转
 
 ```cpp
-struct LazyFHQNode {
-    int key, priority, size;
-    long long sum, lazy;
+struct IntervalNode {
+    int value, priority, size;
     bool reversed;
-    LazyFHQNode *left, *right;
+    IntervalNode* left;
+    IntervalNode* right;
     
-    LazyFHQNode(int k) : key(k), priority(rand()), size(1), 
-                         sum(k), lazy(0), reversed(false),
-                         left(nullptr), right(nullptr) {}
-    
-    void pushDown() {
-        if (reversed) {
-            swap(left, right);
-            if (left) left->reversed ^= true;
-            if (right) right->reversed ^= true;
-            reversed = false;
-        }
-        
-        if (lazy != 0) {
-            key += lazy;
-            sum += lazy * size;
-            if (left) left->lazy += lazy;
-            if (right) right->lazy += lazy;
-            lazy = 0;
-        }
-    }
-    
-    void update() {
-        size = 1;
-        sum = key;
-        if (left) {
-            size += left->size;
-            sum += left->sum;
-        }
-        if (right) {
-            size += right->size;
-            sum += right->sum;
-        }
-    }
+    IntervalNode(int v) : value(v), priority(rand()), size(1), 
+                         reversed(false), left(nullptr), right(nullptr) {}
 };
 
-class LazyFHQTreap {
+class IntervalTreap {
 private:
-    LazyFHQNode* root;
+    IntervalNode* root;
     
-    LazyFHQNode* merge(LazyFHQNode* left, LazyFHQNode* right) {
-        if (!left || !right) return left ? left : right;
+    // 下推标记
+    void pushDown(IntervalNode* node) {
+        if (!node || !node->reversed) return;
+        
+        // 交换左右子树
+        swap(node->left, node->right);
+        
+        // 传递标记
+        if (node->left) node->left->reversed ^= true;
+        if (node->right) node->right->reversed ^= true;
+        
+        node->reversed = false;
+    }
+    
+    // 更新size
+    void updateSize(IntervalNode* node) {
+        if (!node) return;
+        node->size = 1;
+        if (node->left) node->size += node->left->size;
+        if (node->right) node->size += node->right->size;
+    }
+    
+    // 按排名分裂
+    void splitByRank(IntervalNode* root, int rank, IntervalNode*& left, IntervalNode*& right) {
+        if (!root) {
+            left = right = nullptr;
+            return;
+        }
+        
+        pushDown(root);
+        
+        int leftSize = root->left ? root->left->size : 0;
+        
+        if (leftSize < rank) {
+            left = root;
+            splitByRank(root->right, rank - leftSize - 1, left->right, right);
+        } else {
+            right = root;
+            splitByRank(root->left, rank, left, right->left);
+        }
+        updateSize(left);
+        updateSize(right);
+    }
+    
+    // 合并
+    IntervalNode* merge(IntervalNode* left, IntervalNode* right) {
+        if (!left) return right;
+        if (!right) return left;
         
         if (left->priority > right->priority) {
-            left->pushDown();
+            pushDown(left);
             left->right = merge(left->right, right);
-            left->update();
+            updateSize(left);
             return left;
         } else {
-            right->pushDown();
+            pushDown(right);
             right->left = merge(left, right->left);
-            right->update();
+            updateSize(right);
             return right;
         }
     }
     
-    pair<LazyFHQNode*, LazyFHQNode*> splitByRank(LazyFHQNode* root, int k) {
-        if (!root) return {nullptr, nullptr};
-        
-        root->pushDown();
-        int leftSize = root->left ? root->left->size : 0;
-        
-        if (leftSize >= k) {
-            auto [l, r] = splitByRank(root->left, k);
-            root->left = r;
-            root->update();
-            return {l, root};
-        } else {
-            auto [l, r] = splitByRank(root->right, k - leftSize - 1);
-            root->right = l;
-            root->update();
-            return {root, r};
+public:
+    IntervalTreap() : root(nullptr) {
+        srand(time(0));
+    }
+    
+    // 从数组构建
+    void build(vector<int>& arr) {
+        for (int i = 0; i < arr.size(); i++) {
+            insert(i + 1, arr[i]);
         }
     }
     
-public:
-    LazyFHQTreap() : root(nullptr) {
-        srand(time(nullptr));
+    // 在位置pos插入值value
+    void insert(int pos, int value) {
+        IntervalNode* left, *right;
+        splitByRank(root, pos - 1, left, right);
+        
+        IntervalNode* newNode = new IntervalNode(value);
+        root = merge(merge(left, newNode), right);
     }
     
-    void insert(int pos, int key) {
-        auto [l, r] = splitByRank(root, pos);
-        LazyFHQNode* newNode = new LazyFHQNode(key);
-        root = merge(merge(l, newNode), r);
-    }
-    
+    // 删除位置pos的元素
     void remove(int pos) {
-        auto [l, temp] = splitByRank(root, pos - 1);
-        auto [mid, r] = splitByRank(temp, 1);
-        root = merge(l, r);
-        delete mid;
+        IntervalNode* left, *right, *temp;
+        splitByRank(root, pos - 1, left, right);
+        splitByRank(right, 1, temp, right);
+        
+        if (temp) {
+            delete temp;
+        }
+        
+        root = merge(left, right);
     }
     
+    // 翻转区间[l, r]
     void reverse(int l, int r) {
-        auto [left, temp] = splitByRank(root, l - 1);
-        auto [mid, right] = splitByRank(temp, r - l + 1);
+        IntervalNode* left, *right, *middle;
         
-        if (mid) mid->reversed ^= true;
+        // 分离出[l, r]区间
+        splitByRank(root, l - 1, left, right);
+        splitByRank(right, r - l + 1, middle, right);
         
-        root = merge(merge(left, mid), right);
-    }
-    
-    void add(int l, int r, int val) {
-        auto [left, temp] = splitByRank(root, l - 1);
-        auto [mid, right] = splitByRank(temp, r - l + 1);
-        
-        if (mid) mid->lazy += val;
-        
-        root = merge(merge(left, mid), right);
-    }
-    
-    long long querySum(int l, int r) {
-        auto [left, temp] = splitByRank(root, l - 1);
-        auto [mid, right] = splitByRank(temp, r - l + 1);
-        
-        long long result = mid ? mid->sum : 0;
-        
-        root = merge(merge(left, mid), right);
-        return result;
-    }
-    
-    int queryAt(int pos) {
-        auto [l, temp] = splitByRank(root, pos - 1);
-        auto [mid, r] = splitByRank(temp, 1);
-        
-        int result = -1;
-        if (mid) {
-            mid->pushDown();
-            result = mid->key;
+        // 给中间部分打上翻转标记
+        if (middle) {
+            middle->reversed ^= true;
         }
         
-        root = merge(merge(l, mid), r);
-        return result;
+        // 合并回去
+        root = merge(merge(left, middle), right);
+    }
+    
+    // 输出序列
+    void printSequence() {
+        cout << "当前序列：";
+        printSequenceHelper(root);
+        cout << endl;
+    }
+    
+    void printSequenceHelper(IntervalNode* node) {
+        if (!node) return;
+        
+        pushDown(node);
+        printSequenceHelper(node->left);
+        cout << node->value << " ";
+        printSequenceHelper(node->right);
     }
 };
 ```
 
----
+### 🎮 区间操作测试
 
-## ⚡ 复杂度分析
-
-### 时间复杂度
-
-| 操作 | 期望复杂度 | 最坏情况 |
-|------|------------|----------|
-| **查找** | O(log n) | O(n) |
-| **插入** | O(log n) | O(n) |
-| **删除** | O(log n) | O(n) |
-| **第k小** | O(log n) | O(n) |
-| **分裂** | O(log n) | O(n) |
-| **合并** | O(log n) | O(n) |
-
-### 🎯 随机化分析
-
-#### 期望深度证明
-对于随机构建的Treap，期望深度为O(log n)。
-
-**证明思路**：
-- 每个节点的priority是随机的
-- 对于任意路径，期望长度为O(log n)
-- 类似于随机化快速排序的分析
-
-#### 平衡性保证
-随机priority保证了树的平衡性：
-- 不需要复杂的旋转规则
-- 结构完全由随机性决定
-- 避免了特殊输入导致的退化
-
-### 空间复杂度
-- **基本版本**：O(n)
-- **支持区间操作**：O(n)（需要额外的标记）
-
----
-
-## 🏆 经典应用
-
-### 应用场景
-
-#### 1. 普通平衡树
-```cpp
-void solveBST() {
-    FHQTreap treap;
-    int q;
-    cin >> q;
-    
-    while (q--) {
-        int op;
-        cin >> op;
-        
-        switch (op) {
-            case 1: {  // 插入
-                int x;
-                cin >> x;
-                treap.insert(x);
-                break;
-            }
-            case 2: {  // 删除
-                int x;
-                cin >> x;
-                treap.remove(x);
-                break;
-            }
-            case 3: {  // 查询排名
-                int x;
-                cin >> x;
-                cout << treap.getRank(x) << "\n";
-                break;
-            }
-            case 4: {  // 查询第k小
-                int k;
-                cin >> k;
-                cout << treap.kth(k) << "\n";
-                break;
-            }
-            case 5: {  // 前驱
-                int x;
-                cin >> x;
-                cout << treap.getPredecessor(x) << "\n";
-                break;
-            }
-            case 6: {  // 后继
-                int x;
-                cin >> x;
-                cout << treap.getSuccessor(x) << "\n";
-                break;
-            }
-        }
-    }
-}
-```
-
-#### 2. 区间操作
-```cpp
-void solveInterval() {
-    LazyFHQTreap treap;
-    
-    // 初始化序列
-    vector<int> arr = {1, 2, 3, 4, 5};
-    for (int i = 0; i < arr.size(); i++) {
-        treap.insert(i + 1, arr[i]);
-    }
-    
-    int q;
-    cin >> q;
-    
-    while (q--) {
-        int op;
-        cin >> op;
-        
-        if (op == 1) {  // 区间翻转
-            int l, r;
-            cin >> l >> r;
-            treap.reverse(l, r);
-        } else if (op == 2) {  // 区间加
-            int l, r, val;
-            cin >> l >> r >> val;
-            treap.add(l, r, val);
-        } else if (op == 3) {  // 区间求和
-            int l, r;
-            cin >> l >> r;
-            cout << treap.querySum(l, r) << "\n";
-        } else if (op == 4) {  // 插入
-            int pos, val;
-            cin >> pos >> val;
-            treap.insert(pos, val);
-        } else if (op == 5) {  // 删除
-            int pos;
-            cin >> pos;
-            treap.remove(pos);
-        }
-    }
-}
-```
-
-#### 3. 权值线段树替代
-```cpp
-class TreapSegment {
-private:
-    FHQTreap treap;
-    
-public:
-    void update(int pos, int val) {
-        treap.remove(pos);
-        treap.insert(val);
-    }
-    
-    int queryKth(int k) {
-        return treap.kth(k);
-    }
-    
-    int queryRank(int val) {
-        return treap.getRank(val);
-    }
-    
-    int queryPrev(int val) {
-        return treap.getPredecessor(val);
-    }
-    
-    int queryNext(int val) {
-        return treap.getSuccessor(val);
-    }
-};
-```
-
-### 经典例题
-
-#### 例题1：洛谷P3369 - 普通平衡树
 ```cpp
 int main() {
-    FHQTreap treap;
+    IntervalTreap treap;
+    
+    cout << "=== 区间操作Treap演示 ===" << endl;
+    
+    // 构建初始序列 [1, 2, 3, 4, 5]
+    vector<int> arr = {1, 2, 3, 4, 5};
+    treap.build(arr);
+    
+    cout << "初始序列：";
+    treap.printSequence();
+    
+    // 翻转区间[2, 4]
+    cout << "翻转区间[2, 4]" << endl;
+    treap.reverse(2, 4);
+    treap.printSequence();
+    
+    // 翻转区间[1, 3]
+    cout << "翻转区间[1, 3]" << endl;
+    treap.reverse(1, 3);
+    treap.printSequence();
+    
+    return 0;
+}
+```
+
+---
+
+## 🏆 第六章：Treap的优势
+
+### ✨ 为什么选择Treap？
+
+1. **实现简单** - 比红黑树、AVL树简单得多
+2. **期望性能好** - 平均O(log n)的时间复杂度
+3. **代码量少** - 特别是FHQ-Treap
+4. **功能强大** - 支持各种复杂操作
+
+### 🎯 适用场景
+
+- **普通平衡树** - 插入、删除、查找、排名
+- **区间操作** - 区间翻转、区间查询
+- **动态序列** - 支持任意位置插入删除
+- **可持久化** - 容易实现历史版本
+
+### 📊 性能对比
+
+| 操作 | 时间复杂度 | 空间复杂度 |
+|------|------------|------------|
+| 插入 | O(log n) | O(1) |
+| 删除 | O(log n) | O(1) |
+| 查找 | O(log n) | O(1) |
+| 第k小 | O(log n) | O(1) |
+| 区间翻转 | O(log n) | O(1) |
+
+---
+
+## 🎓 第七章：经典应用
+
+### 🌟 洛谷P3369 - 普通平衡树
+
+```cpp
+int main() {
+    RankTreap treap;
     int n;
     cin >> n;
     
@@ -916,12 +771,24 @@ int main() {
         cin >> op >> x;
         
         switch (op) {
-            case 1: treap.insert(x); break;
-            case 2: treap.remove(x); break;
-            case 3: cout << treap.getRank(x) << "\n"; break;
-            case 4: cout << treap.kth(x) << "\n"; break;
-            case 5: cout << treap.getPredecessor(x) << "\n"; break;
-            case 6: cout << treap.getSuccessor(x) << "\n"; break;
+            case 1:
+                treap.insert(x);
+                break;
+            case 2:
+                treap.remove(x);
+                break;
+            case 3:
+                cout << treap.getRank(x) << "\n";
+                break;
+            case 4:
+                cout << treap.kth(x) << "\n";
+                break;
+            case 5:
+                cout << treap.getPredecessor(x) << "\n";
+                break;
+            case 6:
+                cout << treap.getSuccessor(x) << "\n";
+                break;
         }
     }
     
@@ -929,255 +796,101 @@ int main() {
 }
 ```
 
-#### 例题2：洛谷P3391 - 文艺平衡树
+### 🎪 洛谷P3391 - 文艺平衡树
+
 ```cpp
 int main() {
-    LazyFHQTreap treap;
+    IntervalTreap treap;
     int n, m;
     cin >> n >> m;
     
-    // 初始化序列1,2,3,...,n
-    for (int i = 1; i <= n; i++) {
-        treap.insert(i, i);
+    // 构建初始序列
+    vector<int> arr(n);
+    for (int i = 0; i < n; i++) {
+        arr[i] = i + 1;
     }
+    treap.build(arr);
     
+    // 处理翻转操作
     for (int i = 0; i < m; i++) {
         int l, r;
         cin >> l >> r;
         treap.reverse(l, r);
     }
     
-    // 输出最终序列
-    for (int i = 1; i <= n; i++) {
-        cout << treap.queryAt(i);
-        if (i < n) cout << " ";
-    }
-    cout << "\n";
+    // 输出结果
+    treap.printSequence();
     
     return 0;
 }
 ```
 
-#### 例题3：动态逆序对
-```cpp
-class DynamicInversion {
-private:
-    FHQTreap treap;
-    long long inversions;
-    
-public:
-    DynamicInversion() : inversions(0) {}
-    
-    void insert(int val) {
-        int rank = treap.getRank(val);
-        int total = treap.getSize();
-        
-        // 新插入的数会与排名在它后面的数形成逆序对
-        inversions += total - rank + 1;
-        
-        treap.insert(val);
-    }
-    
-    void remove(int val) {
-        int rank = treap.getRank(val);
-        int total = treap.getSize();
-        
-        // 删除时减去相应的逆序对数
-        inversions -= total - rank;
-        
-        treap.remove(val);
-    }
-    
-    long long getInversions() {
-        return inversions;
-    }
-};
-```
-
 ---
 
-## 💡 优化技巧
+## 🎯 第八章：调试技巧
 
-### 实现优化
+### 🔍 常见错误
 
-#### 1. 内存池
+1. **忘记更新size** - 每次merge后要更新
+2. **split逻辑错误** - 注意≤和<的区别
+3. **随机数问题** - 记得初始化随机种子
+4. **内存泄漏** - 删除节点时释放内存
+
+### 🛠️ 调试方法
+
 ```cpp
-class MemoryPool {
-private:
-    FHQNode pool[MAXN];
-    int poolTop;
+// 检查树的性质
+bool checkTreeProperties(Node* node) {
+    if (!node) return true;
     
-public:
-    MemoryPool() : poolTop(0) {}
+    // 检查BST性质
+    if (node->left && node->left->key > node->key) return false;
+    if (node->right && node->right->key < node->key) return false;
     
-    FHQNode* newNode(int key) {
-        pool[poolTop] = FHQNode(key);
-        return &pool[poolTop++];
-    }
+    // 检查堆性质
+    if (node->left && node->left->priority > node->priority) return false;
+    if (node->right && node->right->priority > node->priority) return false;
     
-    void reset() {
-        poolTop = 0;
-    }
-};
-```
-
-#### 2. 非递归实现
-```cpp
-FHQNode* mergeIterative(FHQNode* left, FHQNode* right) {
-    if (!left || !right) return left ? left : right;
-    
-    FHQNode* root = nullptr;
-    FHQNode** current = &root;
-    
-    while (left && right) {
-        if (left->priority > right->priority) {
-            *current = left;
-            current = &(left->right);
-            left = left->right;
-        } else {
-            *current = right;
-            current = &(right->left);
-            right = right->left;
-        }
-    }
-    
-    *current = left ? left : right;
-    
-    // 更新size（需要额外处理）
-    return root;
+    return checkTreeProperties(node->left) && checkTreeProperties(node->right);
 }
-```
 
-#### 3. 批量操作优化
-```cpp
-void batchInsert(vector<int>& elements) {
-    sort(elements.begin(), elements.end());
+// 检查size是否正确
+bool checkSize(Node* node) {
+    if (!node) return true;
     
-    // 构建平衡的初始树
-    function<FHQNode*(int, int)> build = [&](int l, int r) -> FHQNode* {
-        if (l > r) return nullptr;
-        
-        int mid = (l + r) / 2;
-        FHQNode* node = new FHQNode(elements[mid]);
-        node->left = build(l, mid - 1);
-        node->right = build(mid + 1, r);
-        node->update();
-        return node;
-    };
+    int expectedSize = 1;
+    if (node->left) expectedSize += node->left->size;
+    if (node->right) expectedSize += node->right->size;
     
-    FHQNode* batch = build(0, elements.size() - 1);
-    root = merge(root, batch);
-}
-```
-
-### 应用优化
-
-#### 1. 持久化Treap
-```cpp
-struct PersistentNode {
-    int key, priority, size;
-    PersistentNode *left, *right;
-    
-    PersistentNode(int k) : key(k), priority(rand()), size(1),
-                           left(nullptr), right(nullptr) {}
-    
-    PersistentNode(const PersistentNode& other) 
-        : key(other.key), priority(other.priority), size(other.size),
-          left(other.left), right(other.right) {}
-};
-
-class PersistentTreap {
-private:
-    vector<PersistentNode*> versions;
-    
-    PersistentNode* copyNode(PersistentNode* node) {
-        return node ? new PersistentNode(*node) : nullptr;
-    }
-    
-public:
-    void insert(int version, int key) {
-        PersistentNode* oldRoot = versions[version];
-        PersistentNode* newRoot = insertHelper(oldRoot, key);
-        versions.push_back(newRoot);
-    }
-    
-    bool query(int version, int key) {
-        return searchHelper(versions[version], key);
-    }
-};
-```
-
-#### 2. 可持久化操作
-```cpp
-PersistentNode* insertHelper(PersistentNode* root, int key) {
-    if (!root) return new PersistentNode(key);
-    
-    PersistentNode* newRoot = copyNode(root);
-    
-    if (key < newRoot->key) {
-        newRoot->left = insertHelper(newRoot->left, key);
-        if (newRoot->left->priority > newRoot->priority) {
-            newRoot = rotateRight(newRoot);
-        }
-    } else {
-        newRoot->right = insertHelper(newRoot->right, key);
-        if (newRoot->right->priority > newRoot->priority) {
-            newRoot = rotateLeft(newRoot);
-        }
-    }
-    
-    updateSize(newRoot);
-    return newRoot;
+    return node->size == expectedSize && 
+           checkSize(node->left) && checkSize(node->right);
 }
 ```
 
 ---
 
-## 🎓 学习建议
+## 🎪 总结
 
-### 🌟 掌握要点
+### 🌸 记住这些关键点
 
-1. **理解双重性质**：BST性质和Heap性质的结合
-2. **掌握旋转操作**：维护堆性质的关键
-3. **熟练Split/Merge**：FHQ-Treap的核心操作
-4. **灵活应用**：根据问题选择合适的实现方式
+1. **Treap = BST + Heap** - 双重性质保证平衡
+2. **FHQ-Treap更好写** - 只需要split和merge
+3. **随机优先级是关键** - 保证期望平衡
+4. **支持丰富操作** - 排名、区间、持久化
 
-### 📚 推荐练习题
+### 🌟 学习建议
 
-#### 入门级
-1. **洛谷P3369** - 普通平衡树
-2. **洛谷P3391** - 文艺平衡树
-3. **洛谷P1110** - 报表统计
+1. **先掌握基本概念** - 理解BST和Heap的结合
+2. **练习split和merge** - 这是FHQ-Treap的核心
+3. **多做题目** - 从普通平衡树到区间操作
+4. **注意实现细节** - size更新、内存管理等
 
-#### 进阶级
-1. **洛谷P2042** - 维护数列
-2. **洛谷P4008** - 文艺平衡树加强版
-3. **CF785E** - Anton and Permutation
+### 🎯 下节课预告
 
-#### 挑战级
-1. **洛谷P5055** - 可持久化文艺平衡树
-2. **CF765F** - Souvenirs
-3. **BZOJ3223** - 文艺平衡树
-
-### 🚀 进阶方向
-
-1. **可持久化Treap**：支持历史版本查询
-2. **动态开点Treap**：处理大范围稀疏数据
-3. **多维Treap**：处理多维数据的平衡树
-4. **并行Treap**：支持并发操作的实现
+下次アリス老师将为大家讲解**替罪羊树**：一个通过重构来维护平衡的特殊平衡树！
 
 ---
 
-<div align="center">
+**🌸 "Treap用随机的力量创造平衡，体现了算法设计的巧妙！" - アリス老师**
 
-### 🌸 特别鸣谢
-
-**感谢千禧年科技学院数据结构研究小组！**
-
-> *"Treap的美妙之处在于它将随机性与确定性完美结合。简单的随机priority就能保证优秀的期望性能，这正是算法设计中的智慧体现！"*
->
-> — **ユウカ**
-
-*🌸 在随机化的世界里，Treap展现了概率与数据结构的和谐统一！*
-
-</div> 
+*千禧年科技学院 - 让每个数据结构都充满魅力！* 

@@ -1,468 +1,377 @@
-# 🌸 Splay树详解
-## *千禧年科技学院 - ユウカ数据结构专题*
+# 🌸 Splay树（伸展树）- 初学者完全教程
+## *千禧年科技学院 - ユウカ老师的数据结构课*
 
-*"Splay树通过自调整实现高效的平均性能，它的旋转操作充满了数学之美！"*
-
----
-
-## 📚 目录
-
-1. [Splay树基本概念](#splay树基本概念)
-2. [核心操作详解](#核心操作详解)
-3. [算法实现](#算法实现)
-4. [复杂度分析](#复杂度分析)
-5. [经典应用](#经典应用)
-6. [与其他平衡树对比](#与其他平衡树对比)
-7. [优化技巧](#优化技巧)
+*"想象一下，你有一个神奇的书架，每次你拿一本书，这本书就会自动跳到最容易拿到的位置！"*
 
 ---
 
-## 🎯 Splay树基本概念
+## 🎯 开始之前 - 什么是Splay树？
 
-### 定义
+### 最简单的理解
 
-**Splay树（伸展树）**是一种自调整的二叉搜索树，由Daniel Sleator和Robert Tarjan在1985年发明。它通过**Splay操作**将最近访问的节点移到根部，从而保证频繁访问的数据具有更快的访问速度。
+想象你有一个**智能书架**：
+- 📚 书架上的书按照编号排序（就像二叉搜索树）
+- 🔄 每次你拿一本书，**这本书就会自动跳到书架顶部**
+- ⚡ 你经常拿的书总是在最容易拿到的地方
+
+**Splay树就是这样的一个"智能书架"！**
 
 ### 🌟 核心思想
 
-#### 核心理念：时间局部性
 ```
-经常被访问的数据应该更容易访问
+每次访问一个节点 → 把它转到根部 → 下次访问更快
 ```
-
-#### 自调整策略
-- **每次访问节点后，将该节点旋转到根**
-- **通过双旋转保持树的平衡性**
-- **平摊时间复杂度为O(log n)**
-
-### 🔍 基本性质
-
-1. **自调整性**：每次操作后自动调整结构
-2. **无需额外信息**：不需要存储高度、颜色等平衡信息
-3. **缓存友好**：经常访问的数据靠近根部
-4. **实现简单**：相比红黑树等更容易实现
 
 ---
 
-## 🚀 核心操作详解
+## 📖 第一章：从普通的二叉搜索树说起
 
-### 🎭 Splay操作
+### 🌳 回忆：什么是二叉搜索树？
 
-Splay操作是Splay树的核心，通过一系列旋转将目标节点移到根部。
+想象一个家族族谱：
+- 每个人都有一个年龄（数字）
+- **左边的孩子年龄更小**
+- **右边的孩子年龄更大**
 
-#### 旋转类型
-
-##### 1. Zig旋转（单旋转）
 ```
-当x的父节点是根时使用
-
-    p              x
-   /      zig     / \
-  x       ->     a   p
- / \                / \
-a   b              b   c
+    祖父(50)
+   /        \
+儿子(30)    叔叔(70)
+ /    \     /    \
+孙子(20) 女儿(40) 侄子(60) 侄女(80)
 ```
 
-##### 2. Zig-Zig旋转（同向双旋转）
-```
-当x和其父节点在同一侧时使用
+### 🤔 普通二叉搜索树的问题
 
-      g                    x
-     /                    / \
-    p          zig-zig   a   p
-   /            ->          / \
-  x                        b   g
- / \                          / \
-a   b                        c   d
+如果我们总是找年龄为20的孙子：
+```
+第1次查找：50 → 30 → 20 (走了3步)
+第2次查找：50 → 30 → 20 (还是3步)
+第3次查找：50 → 30 → 20 (依然3步)
 ```
 
-##### 3. Zig-Zag旋转（异向双旋转）
-```
-当x和其父节点在不同侧时使用
+**每次都要从头开始找，太麻烦了！**
 
-  g                      x
- /          zig-zag     / \
-p            ->        p   g
- \                    / \ / \
-  x                  a  b c  d
- / \
-b   c
+---
+
+## 🚀 第二章：Splay树的神奇之处
+
+### ✨ Splay的魔法
+
+Splay树说："**既然你经常找20，那我就把20放到最顶上！**"
+
+**找20之前：**
+```
+    50
+   /  \
+  30   70
+ /    /  \
+20   60   80
 ```
 
-### 🎯 Splay操作决策树
+**找20之后（经过Splay操作）：**
+```
+    20
+     \
+      30
+       \
+        50
+         \
+          70
+         /  \
+        60   80
+```
+
+**下次再找20：** 只需要1步！
+
+### 🎯 Splay操作的三种武器
+
+就像武侠小说里的三种招式：
+
+1. **Zig（单旋）** - 简单一招
+2. **Zig-Zig（双旋同向）** - 连环招式
+3. **Zig-Zag（双旋异向）** - 变化招式
+
+---
+
+## 🎭 第三章：三种旋转详解
+
+### 🎯 招式一：Zig旋转（最简单）
+
+**什么时候用？** 当你要找的节点的爸爸就是根节点时
+
+**例子：** 找节点30，它的爸爸50是根
+
+```
+旋转前：          旋转后：
+    50               30
+   /  \     Zig     /  \
+  30   70   →      20   50
+ /                      /  \
+20                     40   70
+```
+
+**代码实现：**
+```cpp
+// 右旋转（Zig）
+void rotateRight(Node* node) {
+    Node* left = node->left;
+    node->left = left->right;
+    left->right = node;
+    // 更新根节点
+    root = left;
+}
+```
+
+### 🎯 招式二：Zig-Zig旋转（连环招）
+
+**什么时候用？** 当你要找的节点和它爸爸在同一侧时
+
+**例子：** 找节点10，它在左侧，爸爸20也在左侧
+
+```
+旋转前：                旋转后：
+      50                   10
+     /  \                 /  \
+    20   70     Zig-Zig   5   20
+   /           →             /  \
+  10                        15   50
+ /  \                           /  \
+5   15                         30   70
+```
+
+**步骤：**
+1. 先旋转爷爷和爸爸
+2. 再旋转爸爸和孩子
+
+### 🎯 招式三：Zig-Zag旋转（变化招）
+
+**什么时候用？** 当你要找的节点和它爸爸在不同侧时
+
+**例子：** 找节点15，它在右侧，但爸爸10在左侧
+
+```
+旋转前：                旋转后：
+      50                   15
+     /  \                 /  \
+    10   70     Zig-Zag   10   50
+     \          →        /   /  \
+      15               5   30   70
+     /  \
+    12   30
+```
+
+**步骤：**
+1. 先让孩子和爸爸旋转
+2. 再让孩子和爷爷旋转
+
+---
+
+## 🎪 第四章：完整的Splay过程演示
+
+### 🎬 实战演示：查找节点5
+
+**初始状态：**
+```
+        20
+       /  \
+      10   30
+     /  \    \
+    5   15   40
+   /
+  2
+```
+
+**目标：** 找到节点5并把它移到根部
+
+**第一步：5的爸爸是10，爷爷是20，都在左侧 → 用Zig-Zig**
+
+```
+第一次Zig-Zig后：
+    5
+   /  \
+  2    10
+       /  \
+      ?    20
+           /  \
+          15   30
+               \
+                40
+```
+
+**第二步：5已经是根了，完成！**
+
+### 🎯 记住决策规则
 
 ```mermaid
 graph TD
-    A["开始Splay(x)"] --> B{"x是根？"}
-    B -->|是| C["操作完成"]
-    B -->|否| D{"x的父节点是根？"}
-    D -->|是| E["执行Zig旋转"]
-    D -->|否| F{"x和父节点同侧？"}
-    F -->|是| G["执行Zig-Zig旋转"]
-    F -->|否| H["执行Zig-Zag旋转"]
+    A["要Splay节点x"] --> B{"x是根？"}
+    B -->|是| C["完成"]
+    B -->|否| D{"x的爸爸是根？"}
+    D -->|是| E["用Zig"]
+    D -->|否| F{"x和爸爸同侧？"}
+    F -->|是| G["用Zig-Zig"]
+    F -->|否| H["用Zig-Zag"]
     E --> A
     G --> A
     H --> A
-    
-    style C fill:#90EE90
-    style E fill:#FFB6C1
-    style G fill:#87CEEB
-    style H fill:#F0E68C
-```
-
-### 🌸 基本操作实现
-
-#### 查找操作
-```cpp
-Node* find(Node* root, int key) {
-    Node* result = search(root, key);
-    if (result) {
-        root = splay(root, key);
-    }
-    return root;
-}
-```
-
-#### 插入操作
-```cpp
-Node* insert(Node* root, int key) {
-    if (!root) return newNode(key);
-    
-    root = splay(root, key);
-    
-    if (root->key == key) return root;  // 已存在
-    
-    Node* newRoot = newNode(key);
-    if (key < root->key) {
-        newRoot->right = root;
-        newRoot->left = root->left;
-        root->left = nullptr;
-    } else {
-        newRoot->left = root;
-        newRoot->right = root->right;
-        root->right = nullptr;
-    }
-    
-    return newRoot;
-}
-```
-
-#### 删除操作
-```cpp
-Node* remove(Node* root, int key) {
-    if (!root) return nullptr;
-    
-    root = splay(root, key);
-    
-    if (root->key != key) return root;  // 不存在
-    
-    if (!root->left) return root->right;
-    if (!root->right) return root->left;
-    
-    Node* temp = root;
-    root = splay(root->left, key);  // 找前驱
-    root->right = temp->right;
-    
-    delete temp;
-    return root;
-}
 ```
 
 ---
 
-## 💻 完整算法实现
+## 💻 第五章：简单代码实现
 
-### 🌸 Splay树完整实现
+### 🌸 最简单的Splay树
 
 ```cpp
-#include <bits/stdc++.h>
+#include <iostream>
 using namespace std;
 
-struct SplayNode {
-    int key, size;
-    SplayNode *left, *right, *parent;
+struct Node {
+    int key;
+    Node* left;
+    Node* right;
     
-    SplayNode(int k) : key(k), size(1), left(nullptr), 
-                       right(nullptr), parent(nullptr) {}
+    Node(int k) : key(k), left(nullptr), right(nullptr) {}
 };
 
-class SplayTree {
+class SimpleSplayTree {
 private:
-    SplayNode* root;
+    Node* root;
     
-    void updateSize(SplayNode* node) {
-        if (!node) return;
-        node->size = 1;
-        if (node->left) node->size += node->left->size;
-        if (node->right) node->size += node->right->size;
-    }
-    
-    void setParent(SplayNode* child, SplayNode* parent) {
-        if (child) child->parent = parent;
-    }
-    
-    void keepParent(SplayNode* node) {
-        setParent(node->left, node);
-        setParent(node->right, node);
-    }
-    
-    void rotateLeft(SplayNode* node) {
-        SplayNode* right = node->right;
-        SplayNode* parent = node->parent;
-        
-        node->right = right->left;
-        right->left = node;
-        
-        keepParent(node);
-        keepParent(right);
-        setParent(right, parent);
-        
-        if (parent) {
-            if (parent->left == node) parent->left = right;
-            else parent->right = right;
-        }
-        
-        updateSize(node);
-        updateSize(right);
-    }
-    
-    void rotateRight(SplayNode* node) {
-        SplayNode* left = node->left;
-        SplayNode* parent = node->parent;
-        
+    // 右旋转
+    Node* rotateRight(Node* node) {
+        Node* left = node->left;
         node->left = left->right;
         left->right = node;
-        
-        keepParent(node);
-        keepParent(left);
-        setParent(left, parent);
-        
-        if (parent) {
-            if (parent->left == node) parent->left = left;
-            else parent->right = left;
-        }
-        
-        updateSize(node);
-        updateSize(left);
+        return left;  // 返回新的根
     }
     
-    void splay(SplayNode* node) {
-        if (!node) return;
+    // 左旋转
+    Node* rotateLeft(Node* node) {
+        Node* right = node->right;
+        node->right = right->left;
+        right->left = node;
+        return right;  // 返回新的根
+    }
+    
+    // 核心的Splay操作
+    Node* splay(Node* root, int key) {
+        if (!root || root->key == key) {
+            return root;
+        }
         
-        while (node->parent) {
-            SplayNode* parent = node->parent;
-            SplayNode* grandparent = parent->parent;
+        // 在左子树中
+        if (key < root->key) {
+            if (!root->left) return root;
             
-            if (!grandparent) {
-                // Zig: 父节点是根
-                if (parent->left == node) {
-                    rotateRight(parent);
-                } else {
-                    rotateLeft(parent);
-                }
-            } else if ((grandparent->left == parent) == (parent->left == node)) {
-                // Zig-Zig: 同向
-                if (parent->left == node) {
-                    rotateRight(grandparent);
-                    rotateRight(parent);
-                } else {
-                    rotateLeft(grandparent);
-                    rotateLeft(parent);
-                }
-            } else {
-                // Zig-Zag: 异向
-                if (parent->left == node) {
-                    rotateRight(parent);
-                    rotateLeft(grandparent);
-                } else {
-                    rotateLeft(parent);
-                    rotateRight(grandparent);
+            // Zig-Zig (左-左)
+            if (key < root->left->key) {
+                root->left->left = splay(root->left->left, key);
+                root = rotateRight(root);
+            }
+            // Zig-Zag (左-右)
+            else if (key > root->left->key) {
+                root->left->right = splay(root->left->right, key);
+                if (root->left->right) {
+                    root->left = rotateLeft(root->left);
                 }
             }
+            
+            return root->left ? rotateRight(root) : root;
         }
-        
-        root = node;
-    }
-    
-    SplayNode* findNode(int key) {
-        SplayNode* current = root;
-        while (current) {
-            if (key == current->key) {
-                splay(current);
-                return current;
-            } else if (key < current->key) {
-                current = current->left;
-            } else {
-                current = current->right;
+        // 在右子树中
+        else {
+            if (!root->right) return root;
+            
+            // Zig-Zag (右-左)
+            if (key < root->right->key) {
+                root->right->left = splay(root->right->left, key);
+                if (root->right->left) {
+                    root->right = rotateRight(root->right);
+                }
             }
+            // Zig-Zig (右-右)
+            else if (key > root->right->key) {
+                root->right->right = splay(root->right->right, key);
+                root = rotateLeft(root);
+            }
+            
+            return root->right ? rotateLeft(root) : root;
         }
-        return nullptr;
-    }
-    
-    SplayNode* findMin(SplayNode* node) {
-        while (node->left) {
-            node = node->left;
-        }
-        splay(node);
-        return node;
-    }
-    
-    SplayNode* findMax(SplayNode* node) {
-        while (node->right) {
-            node = node->right;
-        }
-        splay(node);
-        return node;
     }
     
 public:
-    SplayTree() : root(nullptr) {}
+    SimpleSplayTree() : root(nullptr) {}
     
+    // 插入
     void insert(int key) {
         if (!root) {
-            root = new SplayNode(key);
+            root = new Node(key);
             return;
         }
         
-        SplayNode* current = root;
-        while (true) {
-            if (key == current->key) {
-                splay(current);
-                return;  // 已存在
-            } else if (key < current->key) {
-                if (!current->left) {
-                    current->left = new SplayNode(key);
-                    setParent(current->left, current);
-                    splay(current->left);
-                    break;
-                }
-                current = current->left;
-            } else {
-                if (!current->right) {
-                    current->right = new SplayNode(key);
-                    setParent(current->right, current);
-                    splay(current->right);
-                    break;
-                }
-                current = current->right;
-            }
-        }
+        root = splay(root, key);
         
-        // 更新路径上所有节点的size
-        current = root;
-        while (current) {
-            updateSize(current);
-            if (key < current->key) current = current->left;
-            else if (key > current->key) current = current->right;
-            else break;
-        }
-    }
-    
-    bool search(int key) {
-        return findNode(key) != nullptr;
-    }
-    
-    void remove(int key) {
-        SplayNode* node = findNode(key);
-        if (!node) return;
+        if (root->key == key) return;  // 已存在
         
-        if (!node->left && !node->right) {
-            root = nullptr;
-        } else if (!node->left) {
-            root = node->right;
-            root->parent = nullptr;
-        } else if (!node->right) {
-            root = node->left;
-            root->parent = nullptr;
+        Node* newNode = new Node(key);
+        if (key < root->key) {
+            newNode->left = root->left;
+            newNode->right = root;
+            root->left = nullptr;
         } else {
-            SplayNode* maxLeft = findMax(node->left);
-            maxLeft->right = node->right;
-            setParent(node->right, maxLeft);
-            updateSize(maxLeft);
+            newNode->right = root->right;
+            newNode->left = root;
+            root->right = nullptr;
         }
-        
-        delete node;
+        root = newNode;
     }
     
-    int kth(int k) {
-        SplayNode* current = root;
-        while (current) {
-            int leftSize = current->left ? current->left->size : 0;
-            
-            if (k <= leftSize) {
-                current = current->left;
-            } else if (k == leftSize + 1) {
-                splay(current);
-                return current->key;
-            } else {
-                k -= leftSize + 1;
-                current = current->right;
-            }
+    // 查找
+    bool search(int key) {
+        root = splay(root, key);
+        return root && root->key == key;
+    }
+    
+    // 删除
+    void remove(int key) {
+        if (!root) return;
+        
+        root = splay(root, key);
+        if (root->key != key) return;
+        
+        if (!root->left) {
+            root = root->right;
+        } else {
+            Node* temp = root;
+            root = splay(root->left, key);
+            root->right = temp->right;
+            delete temp;
         }
-        return -1;  // 不存在
     }
     
-    int getRank(int key) {
-        SplayNode* current = root;
-        int rank = 1;
-        
-        while (current) {
-            if (key == current->key) {
-                if (current->left) rank += current->left->size;
-                splay(current);
-                return rank;
-            } else if (key < current->key) {
-                current = current->left;
-            } else {
-                if (current->left) rank += current->left->size;
-                rank += 1;
-                current = current->right;
-            }
-        }
-        return -1;  // 不存在
-    }
-    
-    int getPredecessor(int key) {
-        SplayNode* node = findNode(key);
-        if (!node || !node->left) return -1;
-        
-        return findMax(node->left)->key;
-    }
-    
-    int getSuccessor(int key) {
-        SplayNode* node = findNode(key);
-        if (!node || !node->right) return -1;
-        
-        return findMin(node->right)->key;
-    }
-    
-    void inorderTraversal() {
+    // 中序遍历（用于查看结果）
+    void inorder() {
         inorderHelper(root);
         cout << endl;
     }
     
-    void inorderHelper(SplayNode* node) {
+    void inorderHelper(Node* node) {
         if (!node) return;
         inorderHelper(node->left);
         cout << node->key << " ";
         inorderHelper(node->right);
     }
     
-    int getSize() {
-        return root ? root->size : 0;
-    }
-    
-    bool empty() {
-        return root == nullptr;
-    }
-    
-    // 调试函数：显示树结构
+    // 显示树结构
     void printTree() {
-        cout << "Tree structure:" << endl;
+        cout << "当前树结构：" << endl;
         printHelper(root, "", true);
+        cout << endl;
     }
     
-    void printHelper(SplayNode* node, string indent, bool isLast) {
+    void printHelper(Node* node, string indent, bool isLast) {
         if (!node) return;
         
         cout << indent;
@@ -473,7 +382,7 @@ public:
             cout << "├── ";
             indent += "│   ";
         }
-        cout << node->key << "(size:" << node->size << ")" << endl;
+        cout << node->key << endl;
         
         if (node->left || node->right) {
             if (node->right) {
@@ -485,537 +394,117 @@ public:
         }
     }
 };
-
-// 区间操作的Splay树
-class IntervalSplayTree {
-private:
-    struct Node {
-        int key;
-        bool reversed;
-        Node *left, *right, *parent;
-        
-        Node(int k) : key(k), reversed(false), left(nullptr), 
-                      right(nullptr), parent(nullptr) {}
-    };
-    
-    Node* root;
-    
-    void pushDown(Node* node) {
-        if (!node || !node->reversed) return;
-        
-        swap(node->left, node->right);
-        if (node->left) node->left->reversed ^= true;
-        if (node->right) node->right->reversed ^= true;
-        node->reversed = false;
-    }
-    
-    void splayInterval(Node* node) {
-        // Splay操作的实现（类似上面的实现）
-        // 注意在旋转前要pushDown
-    }
-    
-public:
-    IntervalSplayTree() : root(nullptr) {}
-    
-    void reverse(int l, int r) {
-        // 1. Splay l-1到根
-        // 2. Splay r+1到根的右子树根
-        // 3. 翻转中间区间
-    }
-    
-    void insert(int pos, int key) {
-        // 在指定位置插入元素
-    }
-    
-    void remove(int pos) {
-        // 删除指定位置的元素
-    }
-};
 ```
 
-### 🎯 简化版竞赛模板
+### 🎮 测试代码
 
-```cpp
-struct SplayNode {
-    int key, size;
-    SplayNode *l, *r;
-    
-    SplayNode(int k = 0) : key(k), size(1), l(nullptr), r(nullptr) {}
-    
-    void update() {
-        size = 1;
-        if (l) size += l->size;
-        if (r) size += r->size;
-    }
-};
-
-class SimpleSplay {
-private:
-    SplayNode* root;
-    
-    void zig(SplayNode*& p) {
-        SplayNode* q = p->l;
-        p->l = q->r; q->r = p;
-        p->update(); q->update();
-        p = q;
-    }
-    
-    void zag(SplayNode*& p) {
-        SplayNode* q = p->r;
-        p->r = q->l; q->l = p;
-        p->update(); q->update();
-        p = q;
-    }
-    
-    void splay(SplayNode*& p, int k) {
-        if (!p) return;
-        
-        int leftSize = p->l ? p->l->size : 0;
-        
-        if (k <= leftSize) {
-            splay(p->l, k);
-            zig(p);
-        } else if (k > leftSize + 1) {
-            splay(p->r, k - leftSize - 1);
-            zag(p);
-        }
-    }
-    
-public:
-    SimpleSplay() : root(nullptr) {}
-    
-    void insert(int k) {
-        insert(root, k);
-    }
-    
-    void insert(SplayNode*& p, int k) {
-        if (!p) {
-            p = new SplayNode(k);
-            return;
-        }
-        
-        if (k <= p->key) {
-            insert(p->l, k);
-        } else {
-            insert(p->r, k);
-        }
-        p->update();
-    }
-    
-    int kth(int k) {
-        splay(root, k);
-        return root->key;
-    }
-    
-    void remove(int k) {
-        splay(root, k);
-        // 删除根节点的逻辑
-    }
-};
-```
-
----
-
-## ⚡ 复杂度分析
-
-### 时间复杂度
-
-| 操作 | 最坏情况 | 平摊复杂度 | 期望复杂度 |
-|------|----------|------------|------------|
-| **查找** | O(n) | O(log n) | O(log n) |
-| **插入** | O(n) | O(log n) | O(log n) |
-| **删除** | O(n) | O(log n) | O(log n) |
-| **第k小** | O(n) | O(log n) | O(log n) |
-
-### 🎯 平摊分析要点
-
-#### Access Lemma
-对于任意节点序列的访问，Splay树的总代价不超过O(m log n + n log n)，其中m是操作数。
-
-#### 势函数分析
-定义势函数 Φ(T) = Σ log(size(v))，其中v是树中所有节点。
-
-### 空间复杂度
-- **存储空间**：O(n) - 每个节点存储常数个指针和数据
-- **递归深度**：O(log n) 平摊，O(n) 最坏
-
----
-
-## 🏆 经典应用
-
-### 应用场景
-
-#### 1. 动态维护有序序列
-```cpp
-void solveSequenceQueries() {
-    SplayTree tree;
-    int q;
-    cin >> q;
-    
-    while (q--) {
-        int op;
-        cin >> op;
-        
-        if (op == 1) {  // 插入
-            int x;
-            cin >> x;
-            tree.insert(x);
-        } else if (op == 2) {  // 删除
-            int x;
-            cin >> x;
-            tree.remove(x);
-        } else if (op == 3) {  // 查询排名
-            int x;
-            cin >> x;
-            cout << tree.getRank(x) << "\n";
-        } else if (op == 4) {  // 查询第k小
-            int k;
-            cin >> k;
-            cout << tree.kth(k) << "\n";
-        } else if (op == 5) {  // 前驱
-            int x;
-            cin >> x;
-            cout << tree.getPredecessor(x) << "\n";
-        } else if (op == 6) {  // 后继
-            int x;
-            cin >> x;
-            cout << tree.getSuccessor(x) << "\n";
-        }
-    }
-}
-```
-
-#### 2. 文本编辑器
-```cpp
-class TextEditor {
-private:
-    struct TextNode {
-        char ch;
-        int size;
-        TextNode *left, *right, *parent;
-        
-        TextNode(char c) : ch(c), size(1), left(nullptr), 
-                          right(nullptr), parent(nullptr) {}
-    };
-    
-    TextNode* root;
-    int cursor;
-    
-public:
-    void insertChar(char c) {
-        // 在光标位置插入字符
-    }
-    
-    void deleteChar() {
-        // 删除光标前的字符
-    }
-    
-    void moveCursor(int pos) {
-        // 移动光标到指定位置
-    }
-    
-    string substring(int l, int r) {
-        // 提取子串
-    }
-};
-```
-
-#### 3. 区间翻转
-```cpp
-void reverseInterval(int l, int r) {
-    // 1. 将l-1号元素splay到根
-    if (l > 1) splay(root, l - 1);
-    
-    // 2. 将r+1号元素splay到根的右子树的根
-    SplayNode* temp = root;
-    if (r < n) {
-        splay(temp->right, r - l + 2);
-    }
-    
-    // 3. 现在[l,r]区间就是根的右子树的左子树
-    SplayNode* target = temp->right->left;
-    target->reversed ^= true;
-}
-```
-
-### 经典例题
-
-#### 例题1：洛谷P3369 - 普通平衡树
 ```cpp
 int main() {
-    SplayTree tree;
-    int n;
-    cin >> n;
+    SimpleSplayTree tree;
     
-    while (n--) {
-        int op, x;
-        cin >> op >> x;
-        
-        switch (op) {
-            case 1: tree.insert(x); break;
-            case 2: tree.remove(x); break;
-            case 3: cout << tree.getRank(x) << "\n"; break;
-            case 4: cout << tree.kth(x) << "\n"; break;
-            case 5: cout << tree.getPredecessor(x) << "\n"; break;
-            case 6: cout << tree.getSuccessor(x) << "\n"; break;
-        }
+    cout << "=== Splay树演示 ===" << endl;
+    
+    // 插入一些数据
+    cout << "插入: 50, 30, 70, 20, 40, 60, 80" << endl;
+    tree.insert(50);
+    tree.insert(30);
+    tree.insert(70);
+    tree.insert(20);
+    tree.insert(40);
+    tree.insert(60);
+    tree.insert(80);
+    
+    cout << "插入后的树：" << endl;
+    tree.printTree();
+    
+    // 查找20
+    cout << "查找20..." << endl;
+    if (tree.search(20)) {
+        cout << "找到了！现在20被移到了根部：" << endl;
+        tree.printTree();
+    }
+    
+    // 查找80
+    cout << "查找80..." << endl;
+    if (tree.search(80)) {
+        cout << "找到了！现在80被移到了根部：" << endl;
+        tree.printTree();
     }
     
     return 0;
 }
 ```
 
-#### 例题2：文艺平衡树（区间翻转）
-```cpp
-class FancySplayTree {
-private:
-    struct Node {
-        int value, size;
-        bool reversed;
-        Node *left, *right, *parent;
-        
-        Node(int v) : value(v), size(1), reversed(false),
-                      left(nullptr), right(nullptr), parent(nullptr) {}
-        
-        void pushDown() {
-            if (reversed) {
-                swap(left, right);
-                if (left) left->reversed ^= true;
-                if (right) right->reversed ^= true;
-                reversed = false;
-            }
-        }
-        
-        void update() {
-            size = 1;
-            if (left) size += left->size;
-            if (right) size += right->size;
-        }
-    };
-    
-    Node* root;
-    
-public:
-    void build(vector<int>& arr) {
-        // 构建初始树
-        for (int i = 0; i < arr.size(); i++) {
-            insert(i + 1, arr[i]);
-        }
-    }
-    
-    void reverse(int l, int r) {
-        // 区间翻转操作
-        Node* leftBound = kthNode(l - 1);
-        Node* rightBound = kthNode(r + 1);
-        
-        splay(leftBound);
-        splay(rightBound, leftBound);
-        
-        Node* target = rightBound->left;
-        if (target) target->reversed ^= true;
-    }
-    
-    void printSequence() {
-        inorderTraversal(root);
-    }
-};
-```
+---
+
+## 🏆 第六章：Splay树的优势
+
+### ✨ 为什么要学Splay树？
+
+1. **自动调整** - 不需要手动平衡
+2. **实现简单** - 没有颜色、高度等复杂信息
+3. **缓存友好** - 经常访问的数据在根部
+4. **平均性能好** - 摊还复杂度O(log n)
+
+### 🎯 适用场景
+
+- **缓存系统** - 热点数据自动上浮
+- **文本编辑器** - 光标位置附近的文本
+- **数据库索引** - 频繁查询的记录
+- **LRU缓存** - 最近使用的数据
+
+### 📊 性能对比
+
+| 操作 | 平均时间 | 最坏时间 | 空间复杂度 |
+|------|----------|----------|------------|
+| 查找 | O(log n) | O(n) | O(n) |
+| 插入 | O(log n) | O(n) | O(n) |
+| 删除 | O(log n) | O(n) | O(n) |
+
+**注意：** 虽然最坏情况是O(n)，但在实际应用中，由于自调整特性，性能通常很好。
 
 ---
 
-## 🔍 与其他平衡树对比
+## 🎓 第七章：练习题
 
-### 性能对比表
+### 🌟 基础练习
 
-| 平衡树类型 | 查找 | 插入 | 删除 | 第k小 | 实现难度 | 常数因子 |
-|------------|------|------|------|-------|----------|----------|
-| **Splay树** | O(log n)* | O(log n)* | O(log n)* | O(log n)* | 中等 | 较大 |
-| **AVL树** | O(log n) | O(log n) | O(log n) | O(log n) | 困难 | 小 |
-| **红黑树** | O(log n) | O(log n) | O(log n) | O(log n) | 困难 | 中等 |
-| **Treap** | O(log n)* | O(log n)* | O(log n)* | O(log n)* | 简单 | 中等 |
-| **替罪羊树** | O(log n)* | O(log n)* | O(log n)* | O(log n)* | 简单 | 较大 |
+1. **手工模拟**：在纸上画出查找过程
+   ```
+   初始树：   50
+            /  \
+           30   70
+          /    /  \
+         20   60   80
+   
+   问题：查找20后，树的结构是什么？
+   ```
 
-*表示平摊复杂度
+2. **编程练习**：实现一个简单的Splay树，支持插入、查找、删除
 
-### 🎯 优缺点分析
+### 🏆 进阶挑战
 
-#### Splay树优点
-- ✅ **实现相对简单**：不需要维护平衡因子或颜色
-- ✅ **缓存友好**：频繁访问的数据靠近根部
-- ✅ **支持区间操作**：天然支持区间翻转、区间查询
-- ✅ **平摊性能优秀**：大多数情况下表现良好
-- ✅ **空间效率高**：不需要额外的平衡信息
-
-#### Splay树缺点
-- ❌ **最坏情况较差**：退化时可能达到O(n)
-- ❌ **常数因子较大**：旋转操作较多
-- ❌ **不适合多线程**：旋转操作改变结构
-- ❌ **实时性不佳**：无法保证单次操作的时间上界
+1. **区间操作**：实现支持区间翻转的Splay树
+2. **LRU缓存**：用Splay树实现LRU缓存
+3. **动态排名**：实现第k小元素查询
 
 ---
 
-## 💡 优化技巧
+## 🎯 总结
 
-### 实现优化
+### 🌸 记住这些关键点
 
-#### 1. 迭代式Splay
-```cpp
-void iterativeSplay(SplayNode* node) {
-    while (node->parent) {
-        if (!node->parent->parent) {
-            // Zig
-            if (node->parent->left == node) rotateRight(node->parent);
-            else rotateLeft(node->parent);
-        } else if ((node->parent->left == node) == 
-                   (node->parent->parent->left == node->parent)) {
-            // Zig-Zig
-            if (node->parent->left == node) {
-                rotateRight(node->parent->parent);
-                rotateRight(node->parent);
-            } else {
-                rotateLeft(node->parent->parent);
-                rotateLeft(node->parent);
-            }
-        } else {
-            // Zig-Zag
-            if (node->parent->left == node) {
-                rotateRight(node->parent);
-                rotateLeft(node->parent);
-            } else {
-                rotateLeft(node->parent);
-                rotateRight(node->parent);
-            }
-        }
-    }
-    root = node;
-}
-```
+1. **Splay = 每次访问都移到根部**
+2. **三种旋转：Zig、Zig-Zig、Zig-Zag**
+3. **自动调整，无需手动平衡**
+4. **经常访问的数据会自动上浮**
 
-#### 2. 懒惰传播优化
-```cpp
-struct LazyNode {
-    int value, size, lazy;
-    bool reversed;
-    LazyNode *left, *right;
-    
-    void pushDown() {
-        if (lazy != 0) {
-            value += lazy;
-            if (left) left->lazy += lazy;
-            if (right) right->lazy += lazy;
-            lazy = 0;
-        }
-        
-        if (reversed) {
-            swap(left, right);
-            if (left) left->reversed ^= true;
-            if (right) right->reversed ^= true;
-            reversed = false;
-        }
-    }
-};
-```
+### 🎪 下节课预告
 
-#### 3. 内存池优化
-```cpp
-class MemoryPool {
-private:
-    SplayNode pool[MAXN];
-    int poolTop;
-    
-public:
-    MemoryPool() : poolTop(0) {}
-    
-    SplayNode* newNode(int key) {
-        pool[poolTop].key = key;
-        pool[poolTop].size = 1;
-        pool[poolTop].left = pool[poolTop].right = nullptr;
-        return &pool[poolTop++];
-    }
-    
-    void reset() {
-        poolTop = 0;
-    }
-};
-```
-
-### 应用优化
-
-#### 1. 访问顺序优化
-```cpp
-// 利用时间局部性
-void processQueries(vector<Query>& queries) {
-    // 按访问模式排序查询
-    sort(queries.begin(), queries.end(), [](const Query& a, const Query& b) {
-        return a.accessPattern < b.accessPattern;
-    });
-    
-    SplayTree tree;
-    for (auto& query : queries) {
-        tree.process(query);
-    }
-}
-```
-
-#### 2. 批量操作优化
-```cpp
-void batchInsert(vector<int>& elements) {
-    // 先排序再插入，减少旋转次数
-    sort(elements.begin(), elements.end());
-    
-    for (int element : elements) {
-        insert(element);
-    }
-}
-```
+下次ユウカ老师将带大家学习**Treap**：一个结合了二叉搜索树和堆的神奇数据结构！
 
 ---
 
-## 🎓 学习建议
+**🌸 "理解了Splay树，你就掌握了自调整数据结构的精髓！" - ユウカ老师**
 
-### 🌟 掌握要点
-
-1. **理解旋转机制**：掌握三种旋转类型的应用场景
-2. **实现细节**：注意父指针的维护和size的更新
-3. **区间操作**：理解如何通过Splay实现区间操作
-4. **优化策略**：学会根据应用场景选择优化方法
-
-### 📚 推荐练习题
-
-#### 入门级
-1. **洛谷P3369** - 普通平衡树
-2. **洛谷P3391** - 文艺平衡树
-3. **HDU1890** - Robotic Sort
-
-#### 进阶级
-1. **洛谷P2042** - 维护数列
-2. **BZOJ1500** - 维修数列
-3. **SPOJ QTREE** - Query on a tree
-
-#### 挑战级
-1. **洛谷P4309** - 作诗
-2. **CF295E** - Yaroslav and Points
-3. **BZOJ2002** - Bounce
-
-### 🚀 进阶方向
-
-1. **Link-Cut Tree**：基于Splay的动态树
-2. **Top Tree**：更高级的动态树结构
-3. **Splay Tree的并发版本**：多线程环境下的实现
-4. **持久化Splay Tree**：支持历史版本查询
-
----
-
-<div align="center">
-
-### 🌸 特别鸣谢
-
-**感谢千禧年科技学院数据结构研究小组！**
-
-> *"Splay树虽然没有严格的平衡保证，但它的自调整机制体现了算法设计的智慧。通过简单的旋转操作，它在实际应用中往往表现出色！"*
->
-> — **ユウカ**
-
-*🌸 在数据结构的世界里，每一种平衡树都有其独特的美！*
-
-</div> 
+*千禧年科技学院 - 让算法学习变得简单有趣！* 
